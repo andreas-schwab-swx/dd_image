@@ -33,7 +33,12 @@ echo "Updated files in $BACKUP_DIR:"
 ls -la "$BACKUP_DIR"
 
 # Cleanup
-rm -f "$BACKUP_DIR/$TEST_FILE"
-fusermount -u "$MOUNT_DIR"
+echo "Cleaning up test file: $BACKUP_DIR/$TEST_FILE"
+if rm -f "$BACKUP_DIR/$TEST_FILE"; then
+    echo "Test file deleted successfully"
+else
+    echo "Warning: Could not delete test file"
+fi
 
+fusermount -u "$MOUNT_DIR"
 echo "SSHFS test completed successfully"
