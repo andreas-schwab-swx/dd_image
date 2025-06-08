@@ -61,4 +61,4 @@ else
     echo "No config.sh found - copy config.example.sh to config.sh and configure"
 fi
 
-echo "Copy erfolgreich"
+echo "Deployment completed"
