@@ -89,7 +89,6 @@ source "$CONFIG_FILE"
 
 # Derived variables
 CURRENT_DATE=$(date +"%Y-%m-%d")
-BACKUP_FILENAME="image-$CURRENT_DATE.img.xz"
 
 mkdir -p "$LOG_DIR"
 LOGFILE="$LOG_DIR/dd_image_$(date +%F).log"
@@ -143,10 +142,34 @@ echo "Monitor progress: tail -f $LOGFILE"
         echo "Backup directory created"
     fi
 
-    # Clear free space with zeros (optional)
-    echo "Clearing free space with zeros (this may take a while)..."
-    dd if=/dev/zero of=/zero.fill bs=32M status=progress || sudo rm -f /zero.fill
-    echo "Free space cleared"
+    # Find next available backup number (01-99)
+    COUNTER=1
+    while [ $COUNTER -le 99 ]; do
+        COUNTER_PADDED=$(printf "%02d" $COUNTER)
+        BACKUP_FILENAME="image-$CURRENT_DATE-$COUNTER_PADDED.img.xz"
+        if [ ! -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
+            break
+        fi
+        COUNTER=$((COUNTER + 1))
+    done
+
+    # Check if we exceeded the limit
+    if [ $COUNTER -gt 99 ]; then
+        echo "Error: Maximum number of backups per day (99) reached for $CURRENT_DATE"
+        echo "Please clean up old backups manually"
+        exit 1
+    fi
+
+    echo "Using backup filename: $BACKUP_FILENAME"
+
+    # Clear free space with zeros (optional, configurable)
+    if [ "$ZERO_FILL" = "true" ]; then
+        echo "Clearing free space with zeros (this may take a while)..."
+        dd if=/dev/zero of=/zero.fill bs=32M status=progress || sudo rm -f /zero.fill
+        echo "Free space cleared"
+    else
+        echo "Skipping zero-fill (ZERO_FILL=false). Enable in config for better compression."
+    fi
 
     # Sync filesystem to ensure data consistency
     echo "Syncing filesystems to ensure data consistency..."
@@ -162,7 +185,7 @@ echo "Monitor progress: tail -f $LOGFILE"
 
     # Clean up old backups
     echo "Searching for backup files older than $RETENTION_DAYS days..."
-    find "$BACKUP_DIR" -name "image-*.img.xz" -type f -mtime +$RETENTION_DAYS -exec rm -fv {} \; || echo "No old backups to delete or error during deletion"
+    find "$BACKUP_DIR" -name "image-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9].img.xz" -type f -mtime +$RETENTION_DAYS -exec rm -fv {} \; || echo "No old backups to delete or error during deletion"
     echo "Old backups cleaned up"
 
     echo "Full disk backup process completed successfully!"

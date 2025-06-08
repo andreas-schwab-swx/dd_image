@@ -14,6 +14,7 @@ BACKUP_DIR="$MOUNT_DIR/images"
 # Backup configuration
 DISK_DEVICE="/dev/vda"  # The entire disk to backup (adjust as needed: /dev/sda, /dev/nvme0n1, etc.)
 RETENTION_DAYS=60       # Number of days to keep backups
+ZERO_FILL=false         # Set to true to clear free space with zeros (improves compression but takes much longer)
 
 # Logging configuration
 LOG_DIR="/var/log/dd_image"

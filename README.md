@@ -10,7 +10,7 @@ A comprehensive shell script for creating full disk image backups with automatic
 - **Automatic Cleanup**: Removes old backups based on retention policy
 - **Progress Monitoring**: Shows backup progress with detailed logging
 - **Data Consistency**: Ensures filesystem sync before backup
-- **Free Space Optimization**: Zeros out free space for better compression
+- **Optional Free Space Optimization**: Configurable zero-fill for better compression (disabled by default)
 - **Email Notifications**: Sends success/failure notifications via local mail server
 - **Lock File Protection**: Prevents concurrent backup processes
 
@@ -58,6 +58,7 @@ The script uses an external configuration file to keep sensitive data out of the
    # Backup configuration
    DISK_DEVICE="/dev/vda"  # Adjust as needed: /dev/sda, /dev/nvme0n1, etc.
    RETENTION_DAYS=60       # Days to keep old backups
+   ZERO_FILL=false         # Set to true to clear free space with zeros (improves compression but takes much longer)
 
    # Logging configuration
    LOG_DIR="/var/log/dd_image"
