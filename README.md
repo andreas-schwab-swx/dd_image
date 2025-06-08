@@ -34,36 +34,60 @@ sudo dnf install fuse-sshfs xz
 
 ## Configuration
 
-Edit the variables at the top of `dd_image.sh` to match your setup:
+The script uses an external configuration file to keep sensitive data out of the repository.
 
-```bash
-REMOTE_USER="your-username"           # Remote storage username
-REMOTE_HOST="your-storage-host.com"   # Remote storage hostname
-REMOTE_PATH="/path/to/backup/dir"     # Remote directory path
-DISK_DEVICE="/dev/vda"                # Disk device to backup
-RETENTION_DAYS=60                     # Days to keep old backups
-```
+1. **Copy the example configuration:**
+   ```bash
+   cp config.example.sh config.sh
+   ```
+
+2. **Edit `config.sh` with your settings:**
+   ```bash
+   # Remote storage configuration
+   REMOTE_USER="your-username"
+   REMOTE_HOST="your-storage-host.com"
+   REMOTE_PATH="/path/to/your/backup/directory"
+
+   # Local mount configuration
+   MOUNT_DIR="/root/your-storage-mount"
+   BACKUP_DIR="$MOUNT_DIR/images"
+
+   # Backup configuration
+   DISK_DEVICE="/dev/vda"  # Adjust as needed: /dev/sda, /dev/nvme0n1, etc.
+   RETENTION_DAYS=60       # Days to keep old backups
+
+   # Logging configuration
+   LOG_DIR="/var/log/dd_image"
+   ```
+
+**Note:** The `config.sh` file is gitignored to protect your sensitive configuration data.
 
 ## Setup
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/dd_image_backup.git
-   cd dd_image_backup
+   git clone https://github.com/andreas-schwab-swx/dd_image.sh.git
+   cd dd_image.sh
    ```
 
-2. **Make the script executable:**
+2. **Copy and configure the settings:**
+   ```bash
+   cp config.example.sh config.sh
+   nano config.sh  # Edit with your settings
+   ```
+
+3. **Make the script executable:**
    ```bash
    chmod +x dd_image.sh
    ```
 
-3. **Configure SSH key authentication:**
+4. **Configure SSH key authentication:**
    ```bash
    ssh-keygen -t rsa -b 4096
    ssh-copy-id user@remote-host.com
    ```
 
-4. **Test SSHFS connection:**
+5. **Test SSHFS connection:**
    ```bash
    mkdir -p /tmp/test-mount
    sshfs user@remote-host.com:/path /tmp/test-mount
@@ -88,10 +112,16 @@ sudo crontab -e
 ## File Structure
 
 ```
-dd_image_backup/
-├── dd_image.sh          # Main backup script
+dd_image.sh/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml   # GitHub Actions deployment workflow
+├── .gitignore           # Git ignore file (protects config.sh)
+├── LICENSE              # GPLv3 License
 ├── README.md            # This file
-└── LICENSE              # GPLv3 License
+├── config.example.sh    # Example configuration file
+├── config.sh            # Your configuration (gitignored)
+└── dd_image.sh          # Main backup script
 ```
 
 ## Logging
@@ -154,23 +184,27 @@ df -h /mount/point
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
-## Performance Tips
+## Automated Deployment
 
-- Adjust `bs=4M` block size based on your system (try 8M or 16M)
-- Increase XZ threads (`-T`) based on available CPU cores
-- Use faster compression level (`-3` instead of `-5`) for speed
-- Consider using `pigz` for parallel gzip compression as alternative
+The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) for automatic deployment to your server.
 
-## Support
+### Setup GitHub Actions Deployment
 
-If you encounter issues or have questions:
-- Check the troubleshooting section above
-- Review log files in `/var/log/dd_image/`
-- Open an issue on GitHub
+1. **Configure GitHub Secrets** in your repository settings:
+   - `HOST`: Your server's IP address or hostname
+   - `USERNAME`: SSH username for your server
+   - `SSH_KEY`: Private SSH key for authentication
 
----
+2. **Deployment Process:**
+   - Triggers on every push to `main` branch
+   - Clones/updates the repository on your server
+   - Copies script to `/usr/local/sbin/dd_image.sh`
+   - Sets proper permissions and ownership
 
-**Disclaimer**: Always test backups in a non-production environment first. Verify backup integrity before relying on them for disaster recovery.
+3. **Server Requirements:**
+   - SSH access configured
+   - Git installed
+   - Sudo access for the deployment user
 
 ## Contributing
 
@@ -186,10 +220,11 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## Performance Tips
 
-- Adjust `bs=4M` block size based on your system (try 8M or 16M)
-- Increase XZ threads (`-T`) based on available CPU cores
-- Use faster compression level (`-3` instead of `-5`) for speed
-- Consider using `pigz` for parallel gzip compression as alternative
+- **Block size**: Script uses optimized `bs=32M` for systems with 8GB+ RAM
+- **XZ compression**: Uses `-T2` threads (optimal for 4 vCPU systems)
+- **Compression level**: Uses `-5` for good balance of speed and compression
+- **Alternative**: Use `-3` for faster compression with slightly larger files
+- **Memory limit**: XZ limited to 4GiB to prevent system overload
 
 ## Support
 
