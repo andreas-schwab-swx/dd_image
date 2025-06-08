@@ -26,9 +26,11 @@ ls -la "$BACKUP_DIR"
 # Create test file
 TEST_FILE="sshfs-test-$(date +%s).txt"
 echo "SSHFS test - $(date)" > "$BACKUP_DIR/$TEST_FILE"
-
 echo "Test file created: $TEST_FILE"
-echo "File content: $(cat "$BACKUP_DIR/$TEST_FILE")"
+
+# List again existing files in backup directory
+echo "Updated files in $BACKUP_DIR:"
+ls -la "$BACKUP_DIR"
 
 # Cleanup
 rm -f "$BACKUP_DIR/$TEST_FILE"
