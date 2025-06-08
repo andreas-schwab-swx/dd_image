@@ -19,7 +19,10 @@ if [ "$COPIED_VERSION" != "--copied" ]; then
 
     # Clone or update repository
     if [ -d "$DEPLOY_DIR" ]; then
-        cd "$DEPLOY_DIR" && git pull origin main
+        cd "$DEPLOY_DIR"
+        git reset --hard HEAD  # Discard any local changes
+        git clean -fd          # Remove untracked files
+        git pull origin main
     else
         git clone "$REPO_URL" "$DEPLOY_DIR" && cd "$DEPLOY_DIR"
     fi
