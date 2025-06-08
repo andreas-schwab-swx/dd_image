@@ -162,6 +162,11 @@ echo "Monitor progress: tail -f $LOGFILE"
 
     echo "Using backup filename: $BACKUP_FILENAME"
 
+    # Clean up old backups first (before creating new backup)
+    echo "Searching for backup files older than $RETENTION_DAYS days..."
+    find "$BACKUP_DIR" -name "image-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9].img.xz" -type f -mtime +$RETENTION_DAYS -exec rm -fv {} \; || echo "No old backups to delete or error during deletion"
+    echo "Old backups cleaned up"
+
     # Clear free space with zeros (optional, configurable)
     if [ "$ZERO_FILL" = "true" ]; then
         echo "Clearing free space with zeros (this may take a while)..."
@@ -182,11 +187,6 @@ echo "Monitor progress: tail -f $LOGFILE"
     export XZ_DEFAULTS="--memlimit=4GiB"
     dd conv=sparse if=$DISK_DEVICE bs=32M status=progress | xz -T2 -3 > "$BACKUP_DIR/$BACKUP_FILENAME" || { echo "Backup failed"; exit 1; }
     echo "Backup completed and saved to $BACKUP_DIR/$BACKUP_FILENAME"
-
-    # Clean up old backups
-    echo "Searching for backup files older than $RETENTION_DAYS days..."
-    find "$BACKUP_DIR" -name "image-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9].img.xz" -type f -mtime +$RETENTION_DAYS -exec rm -fv {} \; || echo "No old backups to delete or error during deletion"
-    echo "Old backups cleaned up"
 
     echo "Full disk backup process completed successfully!"
     echo "Backup saved as: $BACKUP_DIR/$BACKUP_FILENAME"
