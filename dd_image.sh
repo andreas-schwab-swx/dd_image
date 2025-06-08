@@ -47,8 +47,8 @@ cleanup() {
             rm -f "$LOCKFILE"
         fi
 
-        # Remove incomplete backup file if it exists
-        if [ -n "$BACKUP_DIR" ] && [ -n "$BACKUP_FILENAME" ] && [ -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
+        # Remove incomplete backup file if backup failed (any non-zero exit code)
+        if [ $exit_code -ne 0 ] && [ -n "$BACKUP_DIR" ] && [ -n "$BACKUP_FILENAME" ] && [ -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
             echo "Removing incomplete backup file: $BACKUP_DIR/$BACKUP_FILENAME"
             rm -f "$BACKUP_DIR/$BACKUP_FILENAME"
         fi
@@ -69,8 +69,10 @@ cleanup() {
 
         echo "Cleanup completed"
 
-        # Send error notification if exit code indicates failure
-        if [ $exit_code -ne 0 ]; then
+        # Send notification based on exit code
+        if [ $exit_code -eq 0 ]; then
+            send_notification "DD Image Backup SUCCESS" "Backup completed successfully. File: $BACKUP_FILENAME" "SUCCESS"
+        else
             send_notification "DD Image Backup FAILED" "Backup process failed with exit code $exit_code. Check log file for details: $LOGFILE" "ERROR"
         fi
     } >> "$LOGFILE" 2>&1
@@ -109,10 +111,10 @@ fi
 echo $$ > "$LOCKFILE"
 
 # Show progress monitoring info to user
-echo "DD Image Backup started (PID: $$)"
 echo "Monitor progress: tail -f $LOGFILE"
 
 {
+    echo "DD Image Backup started (PID: $$)"
     echo "Lock file created: $LOCKFILE (PID: $$)"
 
     # Check and create local mount directory if needed
@@ -198,14 +200,4 @@ echo "Monitor progress: tail -f $LOGFILE"
 
     echo "Full disk backup process completed successfully!"
     echo "Backup saved as: $BACKUP_DIR/$BACKUP_FILENAME"
-
-    # Send success notification
-    backup_size=$(du -h "$BACKUP_DIR/$BACKUP_FILENAME" 2>/dev/null | cut -f1 || echo "unknown")
-    send_notification "DD Image Backup SUCCESS" "Backup completed successfully!
-
-Backup file: $BACKUP_FILENAME
-Backup size: $backup_size
-Backup location: $BACKUP_DIR/$BACKUP_FILENAME
-Disk device: $DISK_DEVICE
-Completion time: $(date)" "SUCCESS"
 } >> "$LOGFILE" 2>&1
