@@ -137,7 +137,8 @@ dd_image/
 ├── README.md            # This file
 ├── config.example.sh    # Example configuration file
 ├── config.sh            # Your configuration (gitignored)
-└── dd_image.sh          # Main backup script
+├── dd_image.sh          # Main backup script
+└── deploy-script.sh     # Server deployment script (copy to server)
 ```
 
 ## Logging
@@ -204,6 +205,8 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) for automatic deployment to your server.
 
+**Prerequisites:** The deployment script must be manually installed on your server first (see Server Setup section below).
+
 ### Setup GitHub Actions Deployment
 
 1. **Configure GitHub Secrets** in your repository settings:
@@ -220,7 +223,34 @@ The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml
 3. **Server Requirements:**
    - SSH access configured
    - Git installed
-   - Sudo access for the deployment user
+   - Deployment script installed (see Server Setup below)
+
+### Server Setup for Automated Deployment
+
+**One-time setup on your target server:**
+
+1. **Copy the deployment script to your server:**
+   ```bash
+   # Copy deploy-script.sh from this repository to your server
+   sudo cp deploy-script.sh /usr/local/bin/deploy-dd-image.sh
+   sudo chmod +x /usr/local/bin/deploy-dd-image.sh
+   sudo chown root:root /usr/local/bin/deploy-dd-image.sh
+   ```
+
+2. **Configure sudoers for passwordless deployment:**
+   ```bash
+   sudo visudo
+   ```
+
+   Add this line (replace `your-username` with your actual username):
+   ```
+   your-username ALL=(root) NOPASSWD: /usr/local/bin/deploy-dd-image.sh
+   ```
+
+3. **Test the deployment script:**
+   ```bash
+   sudo /usr/local/bin/deploy-dd-image.sh
+   ```
 
 ## Contributing
 

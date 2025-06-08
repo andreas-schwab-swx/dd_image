@@ -18,10 +18,5 @@ jobs:
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          sudo mkdir -p /opt/scripts
-          cd /opt/scripts/dd_image || git clone https://github.com/andreas-schwab-swx/dd_image.git /opt/scripts/dd_image
-          cd /opt/scripts/dd_image
-          git pull origin main
-          sudo cp dd_image.sh /usr/local/sbin/
-          sudo chmod +x /usr/local/sbin/dd_image.sh
-          sudo chown root:root /usr/local/sbin/dd_image.sh
+          # Execute deployment script with sudo (NOPASSWD configured)
+          sudo /usr/local/bin/deploy-dd-image.sh
