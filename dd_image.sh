@@ -29,7 +29,7 @@ send_notification() {
             echo "$message"
             echo ""
             echo "Log file: $LOGFILE"
-        } | mail -s "$subject" "$EMAIL_RECIPIENT" 2>/dev/null || echo "Warning: Failed to send email notification"
+        } | mail -r "$EMAIL_FROM" -s "$subject" "$EMAIL_RECIPIENT" 2>/dev/null || echo "Warning: Failed to send email notification"
     fi
 }
 
