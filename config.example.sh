@@ -17,3 +17,7 @@ RETENTION_DAYS=60       # Number of days to keep backups
 
 # Logging configuration
 LOG_DIR="/var/log/dd_image"
+
+# Email notification configuration
+EMAIL_NOTIFICATIONS=true          # Set to false to disable email notifications
+EMAIL_RECIPIENT="admin@example.com"  # Email address for notifications

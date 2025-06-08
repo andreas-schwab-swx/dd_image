@@ -11,6 +11,8 @@ A comprehensive shell script for creating full disk image backups with automatic
 - **Progress Monitoring**: Shows backup progress with detailed logging
 - **Data Consistency**: Ensures filesystem sync before backup
 - **Free Space Optimization**: Zeros out free space for better compression
+- **Email Notifications**: Sends success/failure notifications via local mail server
+- **Lock File Protection**: Prevents concurrent backup processes
 
 ## Prerequisites
 
@@ -19,6 +21,7 @@ A comprehensive shell script for creating full disk image backups with automatic
 - `xz` compression utility
 - SSH key-based authentication configured for remote storage
 - Sufficient disk space on remote storage
+- Local mail server configured (for email notifications)
 
 ### Installing Dependencies
 
@@ -58,6 +61,10 @@ The script uses an external configuration file to keep sensitive data out of the
 
    # Logging configuration
    LOG_DIR="/var/log/dd_image"
+
+   # Email notification configuration
+   EMAIL_NOTIFICATIONS=true          # Set to false to disable email notifications
+   EMAIL_RECIPIENT="admin@example.com"  # Email address for notifications
    ```
 
 **Note:** The `config.sh` file is gitignored to protect your sensitive configuration data.
@@ -92,6 +99,15 @@ The script uses an external configuration file to keep sensitive data out of the
    mkdir -p /tmp/test-mount
    sshfs user@remote-host.com:/path /tmp/test-mount
    fusermount -u /tmp/test-mount
+   ```
+
+6. **Configure local mail server (optional):**
+   ```bash
+   # Install mail utilities (Ubuntu/Debian)
+   sudo apt-get install mailutils
+
+   # Test email functionality
+   echo "Test message" | mail -s "Test Subject" your-email@example.com
    ```
 
 ## Usage

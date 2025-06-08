@@ -8,6 +8,31 @@ set -e
 # Lock file for preventing parallel execution
 LOCKFILE="/var/run/dd_image.lock"
 
+# Email notification function
+send_notification() {
+    local subject="$1"
+    local message="$2"
+    local status="$3"  # SUCCESS or ERROR
+
+    if [ "$EMAIL_NOTIFICATIONS" = "true" ] && [ -n "$EMAIL_RECIPIENT" ]; then
+        echo "Sending email notification to $EMAIL_RECIPIENT..."
+        {
+            echo "DD Image Backup Notification"
+            echo "============================="
+            echo ""
+            echo "Status: $status"
+            echo "Time: $(date)"
+            echo "Host: $(hostname)"
+            echo "Script: $0"
+            echo ""
+            echo "Message:"
+            echo "$message"
+            echo ""
+            echo "Log file: $LOGFILE"
+        } | mail -s "$subject" "$EMAIL_RECIPIENT" 2>/dev/null || echo "Warning: Failed to send email notification"
+    fi
+}
+
 # Cleanup function for error handling
 cleanup() {
     local exit_code=$?
@@ -40,6 +65,12 @@ cleanup() {
     fi
 
     echo "Cleanup completed"
+
+    # Send error notification if exit code indicates failure
+    if [ $exit_code -ne 0 ]; then
+        send_notification "DD Image Backup FAILED" "Backup process failed with exit code $exit_code. Check log file for details: $LOGFILE" "ERROR"
+    fi
+
     exit $exit_code
 }
 
@@ -131,4 +162,14 @@ echo "Lock file created: $LOCKFILE (PID: $$)"
 
     echo "Full disk backup process completed successfully!"
     echo "Backup saved as: $BACKUP_DIR/$BACKUP_FILENAME"
+
+    # Send success notification
+    backup_size=$(du -h "$BACKUP_DIR/$BACKUP_FILENAME" 2>/dev/null | cut -f1 || echo "unknown")
+    send_notification "DD Image Backup SUCCESS" "Backup completed successfully!
+
+Backup file: $BACKUP_FILENAME
+Backup size: $backup_size
+Backup location: $BACKUP_DIR/$BACKUP_FILENAME
+Disk device: $DISK_DEVICE
+Completion time: $(date)" "SUCCESS"
 } >> "$LOGFILE" 2>&1
