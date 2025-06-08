@@ -71,9 +71,34 @@ cleanup() {
 
         # Send notification based on exit code
         if [ $exit_code -eq 0 ]; then
-            send_notification "DD Image Backup SUCCESS" "Backup completed successfully. File: $BACKUP_FILENAME" "SUCCESS"
+            # Collect backup information once
+            backup_size=$(du -h "$BACKUP_DIR/$BACKUP_FILENAME" 2>/dev/null | cut -f1 || echo "unknown")
+            completion_time=$(date)
+
+            # Create backup summary message
+            backup_summary="Backup completed successfully!
+
+Backup file: $BACKUP_FILENAME
+Backup size: $backup_size
+Backup location: $BACKUP_DIR/$BACKUP_FILENAME
+Disk device: $DISK_DEVICE
+Completion time: $completion_time"
+
+            # Log the backup summary
+            echo ""
+            echo "=== BACKUP SUMMARY ==="
+            echo "$backup_summary"
+            echo "======================"
+
+            # Send email notification with same information
+            send_notification "DD Image Backup SUCCESS" "$backup_summary" "SUCCESS"
         else
-            send_notification "DD Image Backup FAILED" "Backup process failed with exit code $exit_code. Check log file for details: $LOGFILE" "ERROR"
+            error_message="Backup process failed with exit code $exit_code. Check log file for details: $LOGFILE"
+            echo ""
+            echo "=== BACKUP FAILED ==="
+            echo "$error_message"
+            echo "====================="
+            send_notification "DD Image Backup FAILED" "$error_message" "ERROR"
         fi
     } >> "$LOGFILE" 2>&1
 
@@ -192,12 +217,7 @@ echo "Monitor progress: tail -f $LOGFILE"
     echo "Creating image and compressing on-the-fly..."
     export XZ_DEFAULTS="--memlimit=4GiB"
     # dd conv=sparse if=$DISK_DEVICE bs=32M status=progress | xz -T2 -3 > "$BACKUP_DIR/$BACKUP_FILENAME" || { echo "Backup failed"; exit 1; }
-
-    # Create test file instead of real backup
-    echo "Creating test backup file instead of real disk image..."
     echo "Test backup created on $(date)" | xz -T2 -3 > "$BACKUP_DIR/$BACKUP_FILENAME" || { echo "Test backup failed"; exit 1; }
-    echo "Backup completed and saved to $BACKUP_DIR/$BACKUP_FILENAME"
-
     echo "Full disk backup process completed successfully!"
     echo "Backup saved as: $BACKUP_DIR/$BACKUP_FILENAME"
 } >> "$LOGFILE" 2>&1
