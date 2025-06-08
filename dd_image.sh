@@ -36,40 +36,44 @@ send_notification() {
 # Cleanup function for error handling
 cleanup() {
     local exit_code=$?
-    echo "Cleanup initiated (exit code: $exit_code)..."
 
-    # Remove lock file
-    if [ -f "$LOCKFILE" ]; then
-        echo "Removing lock file: $LOCKFILE"
-        rm -f "$LOCKFILE"
-    fi
+    # All cleanup messages go to logfile only
+    {
+        echo "Cleanup initiated (exit code: $exit_code)..."
 
-    # Remove incomplete backup file if it exists
-    if [ -n "$BACKUP_DIR" ] && [ -n "$BACKUP_FILENAME" ] && [ -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
-        echo "Removing incomplete backup file: $BACKUP_DIR/$BACKUP_FILENAME"
-        rm -f "$BACKUP_DIR/$BACKUP_FILENAME"
-    fi
+        # Remove lock file
+        if [ -f "$LOCKFILE" ]; then
+            echo "Removing lock file: $LOCKFILE"
+            rm -f "$LOCKFILE"
+        fi
 
-    # Remove zero fill file if it exists
-    if [ -f "/zero.fill" ]; then
-        echo "Removing zero fill file: /zero.fill"
-        rm -f /zero.fill
-    fi
+        # Remove incomplete backup file if it exists
+        if [ -n "$BACKUP_DIR" ] && [ -n "$BACKUP_FILENAME" ] && [ -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
+            echo "Removing incomplete backup file: $BACKUP_DIR/$BACKUP_FILENAME"
+            rm -f "$BACKUP_DIR/$BACKUP_FILENAME"
+        fi
 
-    # Unmount remote storage if mounted
-    if [ -n "$MOUNT_DIR" ] && mount | grep -q "$MOUNT_DIR"; then
-        echo "Unmounting remote storage: $MOUNT_DIR"
-        sync
-        sleep 2
-        fusermount -u "$MOUNT_DIR" 2>/dev/null || umount "$MOUNT_DIR" 2>/dev/null || echo "Warning: Could not unmount $MOUNT_DIR"
-    fi
+        # Remove zero fill file if it exists
+        if [ -f "/zero.fill" ]; then
+            echo "Removing zero fill file: /zero.fill"
+            rm -f /zero.fill
+        fi
 
-    echo "Cleanup completed"
+        # Unmount remote storage if mounted
+        if [ -n "$MOUNT_DIR" ] && mount | grep -q "$MOUNT_DIR"; then
+            echo "Unmounting remote storage: $MOUNT_DIR"
+            sync
+            sleep 2
+            fusermount -u "$MOUNT_DIR" 2>/dev/null || umount "$MOUNT_DIR" 2>/dev/null || echo "Warning: Could not unmount $MOUNT_DIR"
+        fi
 
-    # Send error notification if exit code indicates failure
-    if [ $exit_code -ne 0 ]; then
-        send_notification "DD Image Backup FAILED" "Backup process failed with exit code $exit_code. Check log file for details: $LOGFILE" "ERROR"
-    fi
+        echo "Cleanup completed"
+
+        # Send error notification if exit code indicates failure
+        if [ $exit_code -ne 0 ]; then
+            send_notification "DD Image Backup FAILED" "Backup process failed with exit code $exit_code. Check log file for details: $LOGFILE" "ERROR"
+        fi
+    } >> "$LOGFILE" 2>&1
 
     exit $exit_code
 }
