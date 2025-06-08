@@ -35,40 +35,7 @@ sudo yum install fuse-sshfs xz
 sudo dnf install fuse-sshfs xz
 ```
 
-## Configuration
 
-The script uses an external configuration file to keep sensitive data out of the repository.
-
-1. **Copy the example configuration (in the repository directory):**
-   ```bash
-   cp config.example.sh config.sh
-   ```
-
-2. **Edit `config.sh` with your settings:**
-   ```bash
-   # Remote storage configuration
-   REMOTE_USER="your-username"
-   REMOTE_HOST="your-storage-host.com"
-   REMOTE_PATH="/path/to/your/backup/directory"
-
-   # Local mount configuration
-   MOUNT_DIR="/root/your-storage-mount"
-   BACKUP_DIR="$MOUNT_DIR/images"
-
-   # Backup configuration
-   DISK_DEVICE="/dev/vda"  # Adjust as needed: /dev/sda, /dev/nvme0n1, etc.
-   RETENTION_DAYS=60       # Days to keep old backups
-   ZERO_FILL=false         # Set to true to clear free space with zeros (improves compression but takes much longer)
-
-   # Logging configuration
-   LOG_DIR="/var/log/dd_image"
-
-   # Email notification configuration
-   EMAIL_NOTIFICATIONS=true          # Set to false to disable email notifications
-   EMAIL_RECIPIENT="admin@example.com"  # Email address for notifications
-   ```
-
-**Note:** The `config.sh` file is gitignored to protect your sensitive configuration data. During deployment, it will be installed to `/etc/dd_image/config.sh`.
 
 ## Setup
 
@@ -83,6 +50,33 @@ The script uses an external configuration file to keep sensitive data out of the
    cp config.example.sh config.sh
    nano config.sh  # Edit with your settings
    ```
+
+   **Configuration options:**
+   ```bash
+   # Remote storage configuration
+   REMOTE_USER="your-username"
+   REMOTE_HOST="your-storage-host.com"
+   REMOTE_PATH="/path/to/your/backup/directory"
+
+   # Local mount configuration
+   MOUNT_DIR="/root/your-storage-mount"
+   BACKUP_DIR="$MOUNT_DIR/images"
+
+   # Backup configuration
+   DISK_DEVICE="/dev/vda"  # The entire disk to backup (adjust as needed: /dev/sda, /dev/nvme0n1, etc.)
+   RETENTION_DAYS=60       # Number of days to keep backups
+   ZERO_FILL=false         # Set to true to clear free space with zeros (improves compression but takes much longer)
+
+   # Logging configuration
+   LOG_DIR="/var/log/dd_image"
+
+   # Email notification configuration
+   EMAIL_NOTIFICATIONS=true             # Set to false to disable email notifications
+   EMAIL_FROM="backup@example.com"      # Sender email address
+   EMAIL_RECIPIENT="admin@example.com"  # Email address for notifications
+   ```
+
+   **Note:** The `config.sh` file is gitignored and will be installed to `/etc/dd_image/config.sh` during deployment.
 
 3. **Make scripts executable:**
    ```bash
