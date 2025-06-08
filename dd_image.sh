@@ -20,7 +20,7 @@ send_notification() {
             echo "DD Image Backup Notification"
             echo "============================="
             echo ""
-            echo "Statu: $status"
+            echo "Status: $status"
             echo "Time: $(date)"
             echo "Host: $(hostname)"
             echo "Script: $0"
