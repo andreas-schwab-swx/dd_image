@@ -73,8 +73,8 @@ The script uses an external configuration file to keep sensitive data out of the
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/andreas-schwab-swx/dd_image.sh.git
-   cd dd_image.sh
+   git clone https://github.com/andreas-schwab-swx/dd_image.git
+   cd dd_image
    ```
 
 2. **Copy and configure the settings:**
@@ -128,7 +128,7 @@ sudo crontab -e
 ## File Structure
 
 ```
-dd_image.sh/
+dd_image/
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml   # GitHub Actions deployment workflow
@@ -213,7 +213,7 @@ The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml
 
 2. **Deployment Process:**
    - Triggers on every push to `main` branch
-   - Clones/updates the repository on your server
+   - Clones/updates the repository to `/opt/scripts/dd_image/`
    - Copies script to `/usr/local/sbin/dd_image.sh`
    - Sets proper permissions and ownership
 
