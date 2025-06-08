@@ -1,0 +1,25 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd /opt/scripts/dd_image.sh || git clone https://github.com/andreas-schwab-swx/dd_image.sh.git /opt/scripts/dd_image.sh
+          cd /opt/scripts/dd_image.sh
+          git pull origin main
+          sudo cp dd_image.sh /usr/local/sbin/
+          sudo chmod +x /usr/local/sbin/dd_image.sh
+          sudo chown root:root /usr/local/sbin/dd_image.sh
