@@ -1,0 +1,25 @@
+# Configuration file with sensitive data
+config.sh
+
+# Log files
+*.log
+/var/log/
+
+# Backup files
+*.img
+*.img.xz
+*.img.gz
+
+# Temporary files
+/zero.fill
+*.tmp
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/settings.json
