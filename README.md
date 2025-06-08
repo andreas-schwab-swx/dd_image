@@ -79,32 +79,47 @@ The script uses an external configuration file to keep sensitive data out of the
 
 2. **Copy and configure the settings:**
    ```bash
-   cd dd_image  # Make sure you're in the repository directory
    cp config.example.sh config.sh
    nano config.sh  # Edit with your settings
    ```
 
-   **Note:** During deployment, the configuration will be installed to `/etc/dd_image/config.sh`
-
-3. **Make the script executable:**
+3. **Make scripts executable:**
    ```bash
    chmod +x dd_image.sh
+   chmod +x deploy-script.sh
    ```
 
-4. **Configure SSH key authentication:**
+4. **Copy deployment script to server:**
    ```bash
-   ssh-keygen -t rsa -b 4096
+   sudo cp deploy-script.sh /usr/local/bin/deploy-dd-image.sh
+   sudo chown root:root /usr/local/bin/deploy-dd-image.sh
+   sudo chmod +x /usr/local/bin/deploy-dd-image.sh
+   ```
+
+5. **Execute deployment script (installs everything with correct permissions):**
+   ```bash
+   sudo /usr/local/bin/deploy-dd-image.sh
+   ```
+
+   This will:
+   - Install `dd_image.sh` to `/usr/local/sbin/` with root permissions
+   - Install `config.sh` to `/etc/dd_image/` with secure permissions (600)
+   - Set proper ownership for `/opt/scripts/dd_image/` (root only)
+
+6. **Configure SSH key authentication:**
+   ```bash
+   ssh-keygen -t ed25519 -C "backup-deployment"
    ssh-copy-id user@remote-host.com
    ```
 
-5. **Test SSHFS connection:**
+7. **Test SSHFS connection:**
    ```bash
    mkdir -p /tmp/test-mount
    sshfs user@remote-host.com:/path /tmp/test-mount
    fusermount -u /tmp/test-mount
    ```
 
-6. **Configure local mail server (optional):**
+8. **Configure local mail server (optional):**
    ```bash
    # Install mail utilities (Ubuntu/Debian)
    sudo apt-get install mailutils

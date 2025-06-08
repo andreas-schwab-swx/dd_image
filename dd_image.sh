@@ -104,9 +104,14 @@ fi
 
 # Create lock file with current PID
 echo $$ > "$LOCKFILE"
-echo "Lock file created: $LOCKFILE (PID: $$)"
+
+# Show progress monitoring info to user
+echo "DD Image Backup started (PID: $$)"
+echo "Monitor progress: tail -f $LOGFILE"
 
 {
+    echo "Lock file created: $LOCKFILE (PID: $$)"
+
     # Check and create local mount directory if needed
     if [ ! -d "$MOUNT_DIR" ]; then
         echo "Creating mount directory $MOUNT_DIR"
