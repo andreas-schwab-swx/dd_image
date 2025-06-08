@@ -5,10 +5,19 @@
 # Exit on error
 set -e
 
+# Lock file for preventing parallel execution
+LOCKFILE="/var/run/dd_image.lock"
+
 # Cleanup function for error handling
 cleanup() {
     local exit_code=$?
     echo "Cleanup initiated (exit code: $exit_code)..."
+
+    # Remove lock file
+    if [ -f "$LOCKFILE" ]; then
+        echo "Removing lock file: $LOCKFILE"
+        rm -f "$LOCKFILE"
+    fi
 
     # Remove incomplete backup file if it exists
     if [ -n "$BACKUP_DIR" ] && [ -n "$BACKUP_FILENAME" ] && [ -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
@@ -53,6 +62,18 @@ BACKUP_FILENAME="image-$CURRENT_DATE.img.xz"
 
 mkdir -p "$LOG_DIR"
 LOGFILE="$LOG_DIR/dd_image_$(date +%F).log"
+
+# Check for existing lock file to prevent parallel execution
+if [ -f "$LOCKFILE" ]; then
+    echo "Error: Another backup process is already running (lock file exists: $LOCKFILE)"
+    echo "If you're sure no backup is running, remove the lock file manually:"
+    echo "  sudo rm -f $LOCKFILE"
+    exit 1
+fi
+
+# Create lock file with current PID
+echo $$ > "$LOCKFILE"
+echo "Lock file created: $LOCKFILE (PID: $$)"
 
 {
     # Check and create local mount directory if needed
