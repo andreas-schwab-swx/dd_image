@@ -3,16 +3,6 @@ config.sh
 
 # Log files
 *.log
-/var/log/
-
-# Backup files
-*.img
-*.img.xz
-*.img.gz
-
-# Temporary files
-/zero.fill
-*.tmp
 
 # System files
 .DS_Store
