@@ -80,11 +80,10 @@ sudo dnf install fuse-sshfs xz
 
 3. **Make scripts executable:**
    ```bash
-   chmod +x dd_image.sh
    chmod +x deploy-script.sh
    ```
 
-4. **Copy deployment script to server:**
+4. **Copy deployment script to /usr/local/bin and change ownership and permissions:**
    ```bash
    sudo cp deploy-script.sh /usr/local/bin/deploy-dd-image.sh
    sudo chown root:root /usr/local/bin/deploy-dd-image.sh
