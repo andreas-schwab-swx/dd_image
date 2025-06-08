@@ -185,7 +185,11 @@ echo "Monitor progress: tail -f $LOGFILE"
     echo "Starting full disk backup of $DISK_DEVICE. This will take some time..."
     echo "Creating image and compressing on-the-fly..."
     export XZ_DEFAULTS="--memlimit=4GiB"
-    dd conv=sparse if=$DISK_DEVICE bs=32M status=progress | xz -T2 -3 > "$BACKUP_DIR/$BACKUP_FILENAME" || { echo "Backup failed"; exit 1; }
+    # dd conv=sparse if=$DISK_DEVICE bs=32M status=progress | xz -T2 -3 > "$BACKUP_DIR/$BACKUP_FILENAME" || { echo "Backup failed"; exit 1; }
+
+    # Create test file instead of real backup
+    echo "Creating test backup file instead of real disk image..."
+    echo "Test backup created on $(date)" | xz -T2 -3 > "$BACKUP_DIR/$BACKUP_FILENAME" || { echo "Test backup failed"; exit 1; }
     echo "Backup completed and saved to $BACKUP_DIR/$BACKUP_FILENAME"
 
     echo "Full disk backup process completed successfully!"
