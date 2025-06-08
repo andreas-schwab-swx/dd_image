@@ -85,18 +85,18 @@ sudo dnf install fuse-sshfs xz
 
 4. **Copy deployment script to /usr/local/bin and change ownership and permissions:**
    ```bash
-   sudo cp deploy-script.sh /usr/local/bin/deploy-dd-image.sh
-   sudo chown root:root /usr/local/bin/deploy-dd-image.sh
-   sudo chmod +x /usr/local/bin/deploy-dd-image.sh
+   sudo cp deploy-script.sh /usr/local/bin/deploy-script.sh
+   sudo chown root:root /usr/local/bin/deploy-script.sh
+   sudo chmod +x /usr/local/bin/deploy-script.sh
    ```
 
 5. **Execute deployment script (installs everything with correct permissions):**
    ```bash
-   sudo /usr/local/bin/deploy-dd-image.sh
+   sudo /usr/local/bin/deploy-script.sh
    ```
 
    This will:
-   - Install `dd_image.sh` to `/usr/local/sbin/` with root permissions
+   - Install `dd_image.sh` to `/usr/local/sbin/` with executable permissions set by deploy-script.sh
    - Install `config.sh` to `/etc/dd_image/` with secure permissions (600)
    - Set proper ownership for `/opt/scripts/dd_image/` (root only)
 
@@ -244,9 +244,9 @@ The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml
 1. **Copy the deployment script to your server:**
    ```bash
    # Copy deploy-script.sh from this repository to your server
-   sudo cp deploy-script.sh /usr/local/bin/deploy-dd-image.sh
-   sudo chmod +x /usr/local/bin/deploy-dd-image.sh
-   sudo chown root:root /usr/local/bin/deploy-dd-image.sh
+   sudo cp deploy-script.sh /usr/local/bin/deploy-script.sh
+   sudo chmod +x /usr/local/bin/deploy-script.sh
+   sudo chown root:root /usr/local/bin/deploy-script.sh
    ```
 
 2. **Configure sudoers for passwordless deployment:**
@@ -256,12 +256,12 @@ The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml
 
    Add this line (replace `your-username` with your actual username):
    ```
-   your-username ALL=(root) NOPASSWD: /usr/local/bin/deploy-dd-image.sh
+   your-username ALL=(root) NOPASSWD: /usr/local/bin/deploy-script.sh
    ```
 
 3. **Test the deployment script:**
    ```bash
-   sudo /usr/local/bin/deploy-dd-image.sh
+   sudo /usr/local/bin/deploy-script.sh
    ```
 
 ## Contributing
