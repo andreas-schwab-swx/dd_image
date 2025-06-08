@@ -222,8 +222,8 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 - **Block size**: Script uses optimized `bs=32M` for systems with 8GB+ RAM
 - **XZ compression**: Uses `-T2` threads (optimal for 4 vCPU systems)
-- **Compression level**: Uses `-5` for good balance of speed and compression
-- **Alternative**: Use `-3` for faster compression with slightly larger files
+- **Compression level**: Uses `-3` for faster compression with slightly larger files
+- **Alternative**: Use `-5` or `-6` for better compression but slower speed
 - **Memory limit**: XZ limited to 4GiB to prevent system overload
 
 ## Support

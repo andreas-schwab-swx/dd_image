@@ -96,7 +96,7 @@ LOGFILE="$LOG_DIR/dd_image_$(date +%F).log"
     sync
     echo "Filesystems synced"
 
-    # Backup the entire disk using dd and compress with gzip
+    # Backup the entire disk using dd and compress with xz
     echo "Starting full disk backup of $DISK_DEVICE. This will take some time..."
     echo "Creating image and compressing on-the-fly..."
     export XZ_DEFAULTS="--memlimit=4GiB"
