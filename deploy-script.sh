@@ -8,6 +8,7 @@ set -e
 REPO_URL="https://github.com/andreas-schwab-swx/dd_image.git"
 DEPLOY_DIR="/opt/scripts/dd_image"
 TARGET_SCRIPT="/usr/local/sbin/dd_image.sh"
+CONFIG_DIR="/etc/dd_image"
 
 echo "Deploying dd_image.sh..."
 
@@ -25,5 +26,16 @@ fi
 cp dd_image.sh "$TARGET_SCRIPT"
 chmod +x "$TARGET_SCRIPT"
 chown root:root "$TARGET_SCRIPT"
+
+# Install configuration (only if config.sh exists)
+mkdir -p "$CONFIG_DIR"
+if [ -f "config.sh" ]; then
+    cp config.sh "$CONFIG_DIR/"
+    chmod 600 "$CONFIG_DIR/config.sh"
+    chown root:root "$CONFIG_DIR/config.sh"
+    echo "Configuration installed: $CONFIG_DIR/config.sh"
+else
+    echo "No config.sh found - copy config.example.sh to config.sh and configure"
+fi
 
 echo "Deployment completed: $TARGET_SCRIPT"

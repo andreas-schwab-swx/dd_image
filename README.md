@@ -39,7 +39,7 @@ sudo dnf install fuse-sshfs xz
 
 The script uses an external configuration file to keep sensitive data out of the repository.
 
-1. **Copy the example configuration:**
+1. **Copy the example configuration (in the repository directory):**
    ```bash
    cp config.example.sh config.sh
    ```
@@ -67,7 +67,7 @@ The script uses an external configuration file to keep sensitive data out of the
    EMAIL_RECIPIENT="admin@example.com"  # Email address for notifications
    ```
 
-**Note:** The `config.sh` file is gitignored to protect your sensitive configuration data.
+**Note:** The `config.sh` file is gitignored to protect your sensitive configuration data. During deployment, it will be installed to `/etc/dd_image/config.sh`.
 
 ## Setup
 
@@ -79,9 +79,12 @@ The script uses an external configuration file to keep sensitive data out of the
 
 2. **Copy and configure the settings:**
    ```bash
+   cd dd_image  # Make sure you're in the repository directory
    cp config.example.sh config.sh
    nano config.sh  # Edit with your settings
    ```
+
+   **Note:** During deployment, the configuration will be installed to `/etc/dd_image/config.sh`
 
 3. **Make the script executable:**
    ```bash

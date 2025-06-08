@@ -78,10 +78,10 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # Load configuration
-CONFIG_FILE="$(dirname "$0")/config.sh"
+CONFIG_FILE="/etc/dd_image/config.sh"
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: Configuration file not found: $CONFIG_FILE"
-    echo "Please copy config.example.sh to config.sh and adjust the values."
+    echo "Please copy config.example.sh to config.sh, configure it, and place it in /etc/dd_image/"
     exit 1
 fi
 
