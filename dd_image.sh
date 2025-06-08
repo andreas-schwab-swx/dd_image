@@ -72,7 +72,8 @@ cleanup() {
         # Send notification based on exit code
         if [ $exit_code -eq 0 ]; then
             # Collect backup information once
-            backup_size=$(du -h "$BACKUP_DIR/$BACKUP_FILENAME" 2>/dev/null | cut -f1 || echo "unknown")
+            backup_size=$(ls -lh "$BACKUP_DIR/$BACKUP_FILENAME" 2>/dev/null | awk '{print $5}' || echo "unknown")
+
             completion_time=$(date)
 
             # Create backup summary message
