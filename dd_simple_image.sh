@@ -16,7 +16,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Calculate snapshot size (10% of LV size)
-declare -i LV_SIZE=$(lvs --noheadings --units g ubuntu--vg/ubuntu--lv | awk '{print $4}' | cut -d. -f1)
+declare -i LV_SIZE=$(lvs --noheadings --units g $LVM_VG/$LVM_LV | awk '{print $4}' | cut -d. -f1)
 SNAP_SIZE=$((LV_SIZE*10/100))
 
 # Find next available backup filename
@@ -72,7 +72,10 @@ TEMP_FILE="/dev/shm/backup_$$.img.xz"
 export XZ_DEFAULTS="--memlimit=4GiB"
 
 # Create backup from snapshot
-if dd if=/dev/$LVM_VG/$SNAPSHOT_NAME bs=32M status=progress | xz -T2 -3 > "$TEMP_FILE"; then
+# LVM converts hyphens to double hyphens in device paths
+LVM_VG_PATH=$(echo "$LVM_VG" | sed 's/-/--/g')
+SNAPSHOT_PATH=$(echo "$SNAPSHOT_NAME" | sed 's/-/--/g')
+if dd if=/dev/$LVM_VG_PATH/$SNAPSHOT_PATH bs=32M status=progress | xz -T2 -3 > "$TEMP_FILE"; then
     echo "Backup creation completed. Uploading..."
     
     # Upload via SFTP
