@@ -18,7 +18,7 @@ sync
 
 DEVICE_SIZE=$(blockdev --getsize64 "$DISK_DEVICE")
 TOTAL_BLOCKS=$((DEVICE_SIZE / 33554432))
-BLOCKS_5_PERCENT=$((TOTAL_BLOCKS * 1 / 100))
+BLOCKS_5_PERCENT=$((TOTAL_BLOCKS * 5 / 100))
 
 dd if="$DISK_DEVICE" bs=32M count="$BLOCKS_5_PERCENT" status=progress | mbuffer -m 1G -q | xz -T2 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
 
