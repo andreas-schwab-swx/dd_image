@@ -43,7 +43,7 @@ echo "- Uploading test file to images/"
 echo "- Listing file"
 
 if sftp -b "$SFTP_COMMANDS" "$REMOTE_USER@$REMOTE_HOST"; then
-    echo "SUCCESS: File upload/delete test successful in images directory"
+    echo "SUCCESS: File upload test successful in images directory"
 else
     echo "ERROR: File operations failed"
     rm -f "$SFTP_COMMANDS" "/tmp/$TEST_FILE"

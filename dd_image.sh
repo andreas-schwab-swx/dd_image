@@ -12,8 +12,6 @@ LOCKFILE="/var/run/dd_image.lock"
 find_remote_filename() {
     local current_date="$1"
 
-    echo "Searching for next available backup filename on remote server..."
-
     # Create SFTP commands to list remote files
     local sftp_commands=$(mktemp)
     cat > "$sftp_commands" << EOF
@@ -112,14 +110,18 @@ cleanup() {
         fi
 
         # Remove incomplete remote backup file if backup failed (any non-zero exit code)
-        if [ $exit_code -ne 0 ] && [ -n "$BACKUP_FILENAME" ]; then
+        if [ $exit_code -ne 0 ] && [ -n "$BACKUP_FILENAME" ] && [ "$BACKUP_FILENAME" != "" ] && [[ "$BACKUP_FILENAME" =~ ^image-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}\.img\.xz$ ]]; then
             echo "Attempting to remove incomplete remote backup file: $BACKUP_FILENAME"
-            local sftp_cleanup=$(mktemp)
+            sftp_cleanup=$(mktemp)
             cat > "$sftp_cleanup" << EOF
 rm $REMOTE_PATH/images/$BACKUP_FILENAME
 quit
 EOF
-            sftp -b "$sftp_cleanup" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null || echo "Warning: Could not remove remote backup file"
+            if sftp -b "$sftp_cleanup" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null; then
+                echo "Incomplete remote backup file removed successfully"
+            else
+                echo "Warning: Could not remove remote backup file (may not exist)"
+            fi
             rm -f "$sftp_cleanup"
         fi
 
@@ -210,6 +212,7 @@ echo "Monitor progress: tail -f $LOGFILE"
     echo "SFTP connection test successful"
 
     # Find next available backup filename on remote server
+    echo "Searching for next available backup filename on remote server..."
     BACKUP_FILENAME=$(find_remote_filename "$CURRENT_DATE")
     if [ -z "$BACKUP_FILENAME" ]; then
         echo "Error: Maximum number of backups per day (99) reached for $CURRENT_DATE"
@@ -221,25 +224,25 @@ echo "Monitor progress: tail -f $LOGFILE"
 
     # Clean up old remote backups first (before creating new backup)
     echo "Searching for remote backup files older than $RETENTION_DAYS days..."
-    local cleanup_commands=$(mktemp)
+    cleanup_commands=$(mktemp)
     cat > "$cleanup_commands" << EOF
 ls $REMOTE_PATH/images/image-*.img.xz
 quit
 EOF
 
     # Get list of all remote backup files and delete old ones
-    local all_backups=$(sftp -b "$cleanup_commands" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null | grep "image-" | awk '{print $NF}' || true)
+    all_backups=$(sftp -b "$cleanup_commands" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null | grep "image-" | awk '{print $NF}' || true)
     rm -f "$cleanup_commands"
 
     if [ -n "$all_backups" ]; then
-        local cutoff_date=$(date -d "$RETENTION_DAYS days ago" +%Y-%m-%d)
+        cutoff_date=$(date -d "$RETENTION_DAYS days ago" +%Y-%m-%d)
         echo "$all_backups" | while read backup_file; do
             if [ -n "$backup_file" ]; then
                 # Extract date from filename (image-YYYY-MM-DD-XX.img.xz)
-                local file_date=$(echo "$backup_file" | sed -n 's/image-\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)-.*/\1/p')
+                file_date=$(echo "$backup_file" | sed -n 's/image-\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)-.*/\1/p')
                 if [ -n "$file_date" ] && [ "$file_date" \< "$cutoff_date" ]; then
                     echo "Deleting old remote backup: $backup_file"
-                    local delete_cmd=$(mktemp)
+                    delete_cmd=$(mktemp)
                     cat > "$delete_cmd" << EOF
 rm $REMOTE_PATH/images/$backup_file
 quit
