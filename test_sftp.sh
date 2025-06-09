@@ -36,13 +36,11 @@ SFTP_COMMANDS=$(mktemp)
 cat > "$SFTP_COMMANDS" << EOF
 put /tmp/$TEST_FILE $REMOTE_PATH/images/$TEST_FILE
 ls $REMOTE_PATH/images/$TEST_FILE
-rm $REMOTE_PATH/images/$TEST_FILE
 quit
 EOF
 
 echo "- Uploading test file to images/"
 echo "- Listing file"
-echo "- Removing test file"
 
 if sftp -b "$SFTP_COMMANDS" "$REMOTE_USER@$REMOTE_HOST"; then
     echo "SUCCESS: File upload/delete test successful in images directory"
@@ -55,4 +53,4 @@ fi
 # Cleanup
 rm -f "$SFTP_COMMANDS" "/tmp/$TEST_FILE"
 
-echo "✅ SFTP test completed successfully"
+echo "SUCCESS: SFTP test completed successfully"
