@@ -53,7 +53,6 @@ stream_backup() {
     # Create SFTP commands for streaming
     local sftp_commands=$(mktemp)
     cat > "$sftp_commands" << EOF
-mkdir $REMOTE_PATH
 put - $REMOTE_PATH/$remote_filename
 quit
 EOF
