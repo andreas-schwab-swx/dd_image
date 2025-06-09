@@ -12,7 +12,7 @@ CURRENT_DATE=$(date +"%Y-%m-%d-%H%M")
 BACKUP_FILENAME="image-$CURRENT_DATE.img.xz"
 
 mkdir -p "$MOUNT_DIR"
-sshfs "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH" "$MOUNT_DIR"
+sshfs "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH" "$MOUNT_DIR" -o cache=yes,cache_timeout=1,reconnect,ServerAliveInterval=15
 
 sync
 
