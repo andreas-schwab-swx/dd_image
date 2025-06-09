@@ -4,15 +4,23 @@ CONFIG_FILE="/etc/dd_image/config.sh"
 [ ! -f "$CONFIG_FILE" ] && { echo "Config file not found: $CONFIG_FILE"; exit 1; }
 source "$CONFIG_FILE"
 
+CURRENT_DATE=$(date +"%Y-%m-%d-%H-%M")
+BACKUP_FILENAME="image-$CURRENT_DATE.img.xz"
+LOGFILE="$LOG_DIR/image-$CURRENT_DATE.log"
+
+mkdir -p "$LOG_DIR"
+find "$LOG_DIR" -name "image-*.log" -mtime +30 -delete 2>/dev/null || true
+exec > >(tee "$LOGFILE") 2>&1
+
 [[ $EUID -ne 0 ]] && { echo "Run as root"; exit 1; }
+
 cleanup() {
+    [ $? -ne 0 ] && rm -f "$MOUNT_DIR/$BACKUP_FILENAME" 2>/dev/null
+    
     fusermount -u "$MOUNT_DIR" 2>/dev/null || true
 }
 
 [ ! -b "$DISK_DEVICE" ] && { echo "Device not found: $DISK_DEVICE"; exit 1; }
-
-CURRENT_DATE=$(date +"%Y-%m-%d-%H-%M")
-BACKUP_FILENAME="image-$CURRENT_DATE.img.xz"
 
 mkdir -p "$MOUNT_DIR"
 sshfs "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH" "$MOUNT_DIR" -o cache=yes,cache_timeout=1,reconnect,ServerAliveInterval=15
