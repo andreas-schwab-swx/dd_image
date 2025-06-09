@@ -61,6 +61,7 @@ stream_backup() {
     export XZ_DEFAULTS="--memlimit=4GiB"
 
     # dd -> xz -> ssh (cat)
+    # Note: dd progress goes to stderr, which gets redirected to logfile by caller
     if dd conv=sparse if="$DISK_DEVICE" bs=32M status=progress \
         | xz -T2 -3 \
         | ssh "$REMOTE_USER@$REMOTE_HOST" "cat > '$REMOTE_PATH/images/$remote_filename'"; then
@@ -271,13 +272,14 @@ EOF
     sync
     echo "Filesystems synced"
 
-    # Stream backup directly to remote server
-    echo "Starting streaming backup of $DISK_DEVICE directly to remote server..."
-    if stream_backup "$BACKUP_FILENAME"; then
-        echo "Streaming backup completed successfully!"
-        echo "Backup saved remotely as: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$BACKUP_FILENAME"
-    else
-        echo "Streaming backup failed"
-        exit 1
-    fi
 } >> "$LOGFILE" 2>&1
+
+# Stream backup directly to remote server (outside of log redirection)
+echo "Starting streaming backup of $DISK_DEVICE directly to remote server..." >> "$LOGFILE" 2>&1
+if stream_backup "$BACKUP_FILENAME" 2>> "$LOGFILE"; then
+    echo "Streaming backup completed successfully!" >> "$LOGFILE" 2>&1
+    echo "Backup saved remotely as: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$BACKUP_FILENAME" >> "$LOGFILE" 2>&1
+else
+    echo "Streaming backup failed" >> "$LOGFILE" 2>&1
+    exit 1
+fi
