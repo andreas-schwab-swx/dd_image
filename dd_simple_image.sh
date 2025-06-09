@@ -20,7 +20,7 @@ DEVICE_SIZE=$(blockdev --getsize64 "$DISK_DEVICE")
 TOTAL_BLOCKS=$((DEVICE_SIZE / 33554432))
 BLOCKS_5_PERCENT=$((TOTAL_BLOCKS * 1 / 100))
 
-dd if="$DISK_DEVICE" bs=32M count="$BLOCKS_5_PERCENT" status=progress | xz -T2 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
+dd if="$DISK_DEVICE" bs=32M count="$BLOCKS_5_PERCENT" status=progress | mbuffer -m 2G | xz -T2 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
 
 fusermount -u "$MOUNT_DIR"
 
