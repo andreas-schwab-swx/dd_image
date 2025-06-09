@@ -41,7 +41,12 @@ email() {
             echo ""
             echo "Details:"
             echo "- Device: $DISK_DEVICE"
-            echo "- Backup size: 5% of disk"
+            if [ -f "$MOUNT_DIR/$BACKUP_FILENAME" ]; then
+                BACKUP_SIZE=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME" 2>/dev/null | awk '{print $5}')
+                echo "- Backup size: ${BACKUP_SIZE:-unknown}"
+            else
+                echo "- Backup size: file not found"
+            fi
             echo "- Remote location: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/"
             echo ""
             echo "Log file: $LOGFILE"
