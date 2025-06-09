@@ -22,10 +22,46 @@ exec > >(tee "$LOGFILE") 2>&1
 # Check if script is running as root
 [[ $EUID -ne 0 ]] && { echo "Run as root"; exit 1; }
 
+# Email notification function
+email() {
+    local subject="$1"  # Subject of the email with SUCCESS OR FAILED
+    local status="$2"   # SUCCESS or ERROR
+
+    if [ "$EMAIL_NOTIFICATIONS" = "true" ] && [ -n "$EMAIL_RECIPIENT" ]; then
+        echo "Sending email notification to $EMAIL_RECIPIENT..."
+        {
+            echo "$subject"
+            echo "============================="
+            echo ""
+            echo "Status: $status"
+            echo "Time: $(date)"
+            echo "Host: $(hostname)"
+            echo ""
+            echo "Backup file: $BACKUP_FILENAME"
+            echo ""
+            echo "Details:"
+            echo "- Device: $DISK_DEVICE"
+            echo "- Backup size: 5% of disk"
+            echo "- Remote location: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/"
+            echo ""
+            echo "Log file: $LOGFILE"
+        } | mail -r "$EMAIL_FROM" -s "$subject" "$EMAIL_RECIPIENT" 2>/dev/null || \
+            echo "Warning: Failed to send email notification"
+    fi
+}
+
 # Cleanup function
 cleanup() {
-    [ $? -ne 0 ] && rm -f "$MOUNT_DIR/$BACKUP_FILENAME" 2>/dev/null
-    
+    if [ $? -ne 0 ]; then
+        echo "Error: $BACKUP_FILENAME"
+
+        rm -f "$MOUNT_DIR/$BACKUP_FILENAME" 2>/dev/null
+        email "DD Image Backup FAILED" "ERROR"
+    else
+        echo "Success: $BACKUP_FILENAME"
+
+        email "DD Image Backup SUCCESS" "SUCCESS"
+    fi
     fusermount -u "$MOUNT_DIR" 2>/dev/null || true
 }
 
@@ -55,5 +91,3 @@ dd if="$DISK_DEVICE" bs=32M count="$BLOCKS_5_PERCENT" status=progress | mbuffer 
 
 # Cleanup
 cleanup
-
-echo "Success: $BACKUP_FILENAME"
