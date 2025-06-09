@@ -8,6 +8,71 @@ set -e
 # Lock file for preventing parallel execution
 LOCKFILE="/var/run/dd_image.lock"
 
+# Find next available backup filename on remote server
+find_remote_filename() {
+    local current_date="$1"
+
+    echo "Searching for next available backup filename on remote server..."
+
+    # Create SFTP commands to list remote files
+    local sftp_commands=$(mktemp)
+    cat > "$sftp_commands" << EOF
+ls $REMOTE_PATH/image-$current_date-*.img.xz
+quit
+EOF
+
+    # Get list of existing backups for today
+    local existing_files=$(sftp -b "$sftp_commands" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null | grep "image-$current_date-" | awk '{print $NF}' || true)
+    rm -f "$sftp_commands"
+
+    # Find next available number (01-99)
+    local counter=1
+    while [ $counter -le 99 ]; do
+        local counter_padded=$(printf "%02d" $counter)
+        local filename="image-$current_date-$counter_padded.img.xz"
+
+        if ! echo "$existing_files" | grep -q "$filename"; then
+            echo "$filename"
+            return 0
+        fi
+        counter=$((counter + 1))
+    done
+
+    # If we get here, all 99 slots are taken
+    echo ""
+    return 1
+}
+
+# Stream backup directly to remote server via SFTP
+stream_backup() {
+    local remote_filename="$1"
+
+    echo "Starting streaming backup to remote server..."
+    echo "Remote destination: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/$remote_filename"
+
+    # Create SFTP commands for streaming
+    local sftp_commands=$(mktemp)
+    cat > "$sftp_commands" << EOF
+mkdir $REMOTE_PATH
+put - $REMOTE_PATH/$remote_filename
+quit
+EOF
+
+    # Stream: dd -> xz -> sftp
+    echo "Creating disk image and streaming to remote server..."
+    export XZ_DEFAULTS="--memlimit=4GiB"
+
+    if dd conv=sparse if=$DISK_DEVICE bs=32M status=progress | xz -T2 -3 | sftp -b "$sftp_commands" "$REMOTE_USER@$REMOTE_HOST"; then
+        echo "Streaming backup completed successfully"
+        rm -f "$sftp_commands"
+        return 0
+    else
+        echo "Streaming backup failed"
+        rm -f "$sftp_commands"
+        return 1
+    fi
+}
+
 # Email notification function
 send_notification() {
     local subject="$1"
@@ -47,10 +112,16 @@ cleanup() {
             rm -f "$LOCKFILE"
         fi
 
-        # Remove incomplete backup file if backup failed (any non-zero exit code)
-        if [ $exit_code -ne 0 ] && [ -n "$BACKUP_DIR" ] && [ -n "$BACKUP_FILENAME" ] && [ -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
-            echo "Removing incomplete backup file: $BACKUP_DIR/$BACKUP_FILENAME"
-            rm -f "$BACKUP_DIR/$BACKUP_FILENAME"
+        # Remove incomplete remote backup file if backup failed (any non-zero exit code)
+        if [ $exit_code -ne 0 ] && [ -n "$BACKUP_FILENAME" ]; then
+            echo "Attempting to remove incomplete remote backup file: $BACKUP_FILENAME"
+            local sftp_cleanup=$(mktemp)
+            cat > "$sftp_cleanup" << EOF
+rm $REMOTE_PATH/$BACKUP_FILENAME
+quit
+EOF
+            sftp -b "$sftp_cleanup" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null || echo "Warning: Could not remove remote backup file"
+            rm -f "$sftp_cleanup"
         fi
 
         # Remove zero fill file if it exists
@@ -59,29 +130,17 @@ cleanup() {
             rm -f /zero.fill
         fi
 
-        # Unmount remote storage if mounted
-        if [ -n "$MOUNT_DIR" ] && mount | grep -q "$MOUNT_DIR"; then
-            echo "Unmounting remote storage: $MOUNT_DIR"
-            sync
-            sleep 2
-            fusermount -u "$MOUNT_DIR" 2>/dev/null || umount "$MOUNT_DIR" 2>/dev/null || echo "Warning: Could not unmount $MOUNT_DIR"
-        fi
-
         echo "Cleanup completed"
 
         # Send notification based on exit code
         if [ $exit_code -eq 0 ]; then
-            # Collect backup information once
-            backup_size=$(ls -lh "$BACKUP_DIR/$BACKUP_FILENAME" 2>/dev/null | awk '{print $5}' || echo "unknown")
-
             completion_time=$(date)
 
             # Create backup summary message
             backup_summary="Backup completed successfully!
 
 Backup file: $BACKUP_FILENAME
-Backup size: $backup_size
-Backup location: $BACKUP_DIR/$BACKUP_FILENAME
+Remote location: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/$BACKUP_FILENAME
 Disk device: $DISK_DEVICE
 Completion time: $completion_time"
 
@@ -143,61 +202,56 @@ echo "Monitor progress: tail -f $LOGFILE"
     echo "DD Image Backup started (PID: $$)"
     echo "Lock file created: $LOCKFILE (PID: $$)"
 
-    # Check and create local mount directory if needed
-    if [ ! -d "$MOUNT_DIR" ]; then
-        echo "Creating mount directory $MOUNT_DIR"
-        mkdir -p "$MOUNT_DIR"
-        chmod 0755 "$MOUNT_DIR"
-        echo "Mount directory created"
-    else
-        echo "Mount directory already exists"
+    # Test SFTP connection
+    echo "Testing SFTP connection to $REMOTE_USER@$REMOTE_HOST..."
+    if ! sftp -b /dev/null "$REMOTE_USER@$REMOTE_HOST" < /dev/null; then
+        echo "Failed to connect to remote host via SFTP. Exiting."
+        exit 1
     fi
+    echo "SFTP connection test successful"
 
-    # Check if remote filesystem is already mounted
-    if ! mount | grep -q "$MOUNT_DIR"; then
-        echo "Mounting remote storage..."
-        sshfs $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH $MOUNT_DIR
-        if [ $? -ne 0 ]; then
-            echo "Failed to mount remote storage. Exiting."
-            exit 1
-        fi
-        echo "Remote storage mounted successfully"
-    else
-        echo "Remote storage is already mounted"
-    fi
-
-    # Create backup directory if needed
-    echo "Checking backup directory..."
-    if [ ! -d "$BACKUP_DIR" ]; then
-        echo "Creating backup directory $BACKUP_DIR"
-        mkdir -p "$BACKUP_DIR"
-        echo "Backup directory created"
-    fi
-
-    # Find next available backup number (01-99)
-    COUNTER=1
-    while [ $COUNTER -le 99 ]; do
-        COUNTER_PADDED=$(printf "%02d" $COUNTER)
-        BACKUP_FILENAME="image-$CURRENT_DATE-$COUNTER_PADDED.img.xz"
-        if [ ! -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
-            break
-        fi
-        COUNTER=$((COUNTER + 1))
-    done
-
-    # Check if we exceeded the limit
-    if [ $COUNTER -gt 99 ]; then
+    # Find next available backup filename on remote server
+    BACKUP_FILENAME=$(find_remote_filename "$CURRENT_DATE")
+    if [ -z "$BACKUP_FILENAME" ]; then
         echo "Error: Maximum number of backups per day (99) reached for $CURRENT_DATE"
-        echo "Please clean up old backups manually"
+        echo "Please clean up old backups manually on remote server"
         exit 1
     fi
 
     echo "Using backup filename: $BACKUP_FILENAME"
 
-    # Clean up old backups first (before creating new backup)
-    echo "Searching for backup files older than $RETENTION_DAYS days..."
-    find "$BACKUP_DIR" -name "image-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9].img.xz" -type f -mtime +$RETENTION_DAYS -exec rm -fv {} \; || echo "No old backups to delete or error during deletion"
-    echo "Old backups cleaned up"
+    # Clean up old remote backups first (before creating new backup)
+    echo "Searching for remote backup files older than $RETENTION_DAYS days..."
+    local cleanup_commands=$(mktemp)
+    cat > "$cleanup_commands" << EOF
+ls $REMOTE_PATH/image-*.img.xz
+quit
+EOF
+
+    # Get list of all remote backup files and delete old ones
+    local all_backups=$(sftp -b "$cleanup_commands" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null | grep "image-" | awk '{print $NF}' || true)
+    rm -f "$cleanup_commands"
+
+    if [ -n "$all_backups" ]; then
+        local cutoff_date=$(date -d "$RETENTION_DAYS days ago" +%Y-%m-%d)
+        echo "$all_backups" | while read backup_file; do
+            if [ -n "$backup_file" ]; then
+                # Extract date from filename (image-YYYY-MM-DD-XX.img.xz)
+                local file_date=$(echo "$backup_file" | sed -n 's/image-\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)-.*/\1/p')
+                if [ -n "$file_date" ] && [ "$file_date" \< "$cutoff_date" ]; then
+                    echo "Deleting old remote backup: $backup_file"
+                    local delete_cmd=$(mktemp)
+                    cat > "$delete_cmd" << EOF
+rm $REMOTE_PATH/$backup_file
+quit
+EOF
+                    sftp -b "$delete_cmd" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null || echo "Warning: Could not delete $backup_file"
+                    rm -f "$delete_cmd"
+                fi
+            fi
+        done
+    fi
+    echo "Old remote backups cleaned up"
 
     # Clear free space with zeros (optional, configurable)
     if [ "$ZERO_FILL" = "true" ]; then
@@ -213,12 +267,15 @@ echo "Monitor progress: tail -f $LOGFILE"
     sync
     echo "Filesystems synced"
 
-    # Backup the entire disk using dd and compress with xz
-    echo "Starting full disk backup of $DISK_DEVICE. This will take some time..."
-    echo "Creating image and compressing on-the-fly..."
-    export XZ_DEFAULTS="--memlimit=4GiB"
-    dd conv=sparse if=$DISK_DEVICE bs=32M status=progress | xz -T2 -3 > "$BACKUP_DIR/$BACKUP_FILENAME" || { echo "Backup failed"; exit 1; }
-    #echo "Test backup created on $(date)" | xz -T2 -3 > "$BACKUP_DIR/$BACKUP_FILENAME" || { echo "Test backup failed"; exit 1; }
-    echo "Full disk backup process completed successfully!"
-    echo "Backup saved as: $BACKUP_DIR/$BACKUP_FILENAME"
+    # Stream backup directly to remote server
+    echo "Starting streaming backup of $DISK_DEVICE directly to remote server..."
+    echo "This will take some time and uses minimal local disk space..."
+
+    if stream_backup "$BACKUP_FILENAME"; then
+        echo "Streaming backup completed successfully!"
+        echo "Backup saved remotely as: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/$BACKUP_FILENAME"
+    else
+        echo "Streaming backup failed"
+        exit 1
+    fi
 } >> "$LOGFILE" 2>&1
