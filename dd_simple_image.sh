@@ -86,15 +86,7 @@ echo "Using filename: $BACKUP_FILENAME"
 echo "Syncing filesystems..."
 sync
 
-# Test SSH connection first
-echo "Testing SSH connection..."
-if ! ssh "$REMOTE_USER@$REMOTE_HOST" "echo 'SSH connection test successful'" >/dev/null 2>&1; then
-    echo "Error: SSH connection failed"
-    exit 1
-fi
-echo "SSH connection OK"
-
-# Create backup and stream to remote server
+# Create backup and stream to remote server via SFTP
 echo ""
 echo "Starting backup..."
 echo "Destination: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$BACKUP_FILENAME"
@@ -102,50 +94,40 @@ echo ""
 
 export XZ_DEFAULTS="--memlimit=4GiB"
 
-# Test if remote directory is writable
-echo "Testing remote directory access..."
-if ! ssh "$REMOTE_USER@$REMOTE_HOST" "touch '$REMOTE_PATH/images/.test' && rm '$REMOTE_PATH/images/.test'" 2>/dev/null; then
-    echo "Error: Cannot write to remote directory $REMOTE_PATH/images/"
-    exit 1
-fi
-echo "Remote directory access OK"
+# Create temporary file for the backup
+TEMP_FILE="/tmp/backup_$$.img.xz"
+echo "Creating compressed backup image..."
+echo "Temporary file: $TEMP_FILE"
 
-# Alternative approach: Use named pipe for streaming
-echo "Creating disk image and streaming to remote server..."
+# Create backup to temporary file
+if dd conv=sparse if="$DISK_DEVICE" bs=32M status=progress | xz -T2 -3 > "$TEMP_FILE"; then
+    echo ""
+    echo "Backup creation completed. Uploading to remote server..."
 
-# Create a named pipe
-PIPE_FILE="/tmp/backup_pipe_$$"
-mkfifo "$PIPE_FILE"
+    # Upload via SFTP
+    sftp_upload=$(mktemp)
+    cat > "$sftp_upload" << EOF
+cd $REMOTE_PATH/images
+put $TEMP_FILE $BACKUP_FILENAME
+quit
+EOF
 
-# Start the receiving end in background
-ssh "$REMOTE_USER@$REMOTE_HOST" "cat > '$REMOTE_PATH/images/$BACKUP_FILENAME'" < "$PIPE_FILE" &
-SSH_PID=$!
-
-# Start the sending end
-if dd conv=sparse if="$DISK_DEVICE" bs=32M status=progress 2>&1 | xz -T2 -3 > "$PIPE_FILE"; then
-    # Wait for SSH to complete
-    wait $SSH_PID
-    SSH_EXIT=$?
-
-    # Clean up pipe
-    rm -f "$PIPE_FILE"
-
-    if [ $SSH_EXIT -eq 0 ]; then
-        echo ""
-        echo "Backup completed successfully!"
+    if sftp -b "$sftp_upload" "$REMOTE_USER@$REMOTE_HOST"; then
+        echo "Upload completed successfully!"
         echo "File: $BACKUP_FILENAME"
         echo "Location: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$BACKUP_FILENAME"
+
+        # Clean up
+        rm -f "$sftp_upload"
+        rm -f "$TEMP_FILE"
     else
-        echo ""
-        echo "Error: SSH transfer failed!"
+        echo "Error: SFTP upload failed!"
+        rm -f "$sftp_upload"
+        rm -f "$TEMP_FILE"
         exit 1
     fi
 else
-    # Kill SSH process and clean up
-    kill $SSH_PID 2>/dev/null || true
-    wait $SSH_PID 2>/dev/null || true
-    rm -f "$PIPE_FILE"
-    echo ""
     echo "Error: Backup creation failed!"
+    rm -f "$TEMP_FILE"
     exit 1
 fi
