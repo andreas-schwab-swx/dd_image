@@ -54,21 +54,21 @@ EOF
 stream_backup() {
     local remote_filename="$1"
 
-    echo "Starting streaming backup to remote server..."
-    echo "Remote destination: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$remote_filename"
+    echo "Starting streaming backup to remote server..." >&2
+    echo "Remote destination: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$remote_filename" >&2
 
-    echo "Creating disk image and streaming to remote server..."
+    echo "Creating disk image and streaming to remote server..." >&2
     export XZ_DEFAULTS="--memlimit=4GiB"
 
     # dd -> xz -> ssh (cat)
-    # Note: dd progress goes to stderr, which gets redirected to logfile by caller
-    if dd conv=sparse if="$DISK_DEVICE" bs=32M status=progress \
+    # Send all messages to stderr so they go to logfile, but keep pipeline stdout clean
+    if dd conv=sparse if="$DISK_DEVICE" bs=32M status=progress 2>&1 \
         | xz -T2 -3 \
-        | ssh "$REMOTE_USER@$REMOTE_HOST" "cat > '$REMOTE_PATH/images/$remote_filename'"; then
-        echo "Streaming backup completed successfully"
+        | ssh "$REMOTE_USER@$REMOTE_HOST" "cat > '$REMOTE_PATH/images/$remote_filename'" 2>&1; then
+        echo "Streaming backup completed successfully" >&2
         return 0
     else
-        echo "Streaming backup failed"
+        echo "Streaming backup failed" >&2
         return 1
     fi
 }
@@ -272,13 +272,16 @@ EOF
     sync
     echo "Filesystems synced"
 
+    # Stream backup directly to remote server
+    echo "Starting streaming backup of $DISK_DEVICE directly to remote server..."
 } >> "$LOGFILE" 2>&1
 
-# Stream backup directly to remote server (outside of log redirection)
-echo "Starting streaming backup of $DISK_DEVICE directly to remote server..." >> "$LOGFILE" 2>&1
+# Execute backup with stderr redirected to logfile but stdout free for pipeline
 if stream_backup "$BACKUP_FILENAME" 2>> "$LOGFILE"; then
-    echo "Streaming backup completed successfully!" >> "$LOGFILE" 2>&1
-    echo "Backup saved remotely as: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$BACKUP_FILENAME" >> "$LOGFILE" 2>&1
+    {
+        echo "Streaming backup completed successfully!"
+        echo "Backup saved remotely as: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$BACKUP_FILENAME"
+    } >> "$LOGFILE" 2>&1
 else
     echo "Streaming backup failed" >> "$LOGFILE" 2>&1
     exit 1
