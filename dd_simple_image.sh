@@ -16,7 +16,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Calculate snapshot size (10% of LV size)
-declare -i LV_SIZE=$(lvs $LVM_VG/$LVM_LV | awk 'FNR==2 {print $4}' | cut -d. -f1)
+declare -i LV_SIZE=$(lvs --noheadings --units g ubuntu--vg/ubuntu--lv | awk '{print $4}' | cut -d. -f1)
 SNAP_SIZE=$((LV_SIZE*10/100))
 
 # Find next available backup filename
