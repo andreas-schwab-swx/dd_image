@@ -88,6 +88,3 @@ BLOCKS_5_PERCENT=$((TOTAL_BLOCKS * 1 / 100))
 
 # Perform backup using dd, mbuffer, and xz
 dd if="$DISK_DEVICE" bs=32M count="$BLOCKS_5_PERCENT" status=progress | mbuffer -m 1G -q | xz -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
-
-# Cleanup
-cleanup
