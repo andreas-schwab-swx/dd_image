@@ -5,6 +5,9 @@ CONFIG_FILE="/etc/dd_image/config.sh"
 source "$CONFIG_FILE"
 
 [[ $EUID -ne 0 ]] && { echo "Run as root"; exit 1; }
+cleanup() {
+    fusermount -u "$MOUNT_DIR" 2>/dev/null || true
+}
 
 [ ! -b "$DISK_DEVICE" ] && { echo "Device not found: $DISK_DEVICE"; exit 1; }
 
@@ -24,12 +27,6 @@ BLOCKS_5_PERCENT=$((TOTAL_BLOCKS * 1 / 100))
 
 dd if="$DISK_DEVICE" bs=32M count="$BLOCKS_5_PERCENT" status=progress | mbuffer -m 1G -q | xz -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
 
-echo "Success: $BACKUP_FILENAME"
-
 cleanup
 
-echo "Successfully unmounted $MOUNT_DIR"
-
-cleanup() {
-    fusermount -u "$MOUNT_DIR" 2>/dev/null || true
-}
+echo "Success: $BACKUP_FILENAME"
