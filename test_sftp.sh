@@ -30,21 +30,22 @@ TEST_FILE="sftp-test-$(date +%s).txt"
 echo "SFTP test from $(hostname) - $(date)" > "/tmp/$TEST_FILE"
 echo "Test file created: /tmp/$TEST_FILE"
 
-# Test file transfer
-echo "Testing file operations..."
+# Test file transfer to images directory
+echo "Testing file operations in images directory..."
 SFTP_COMMANDS=$(mktemp)
 cat > "$SFTP_COMMANDS" << EOF
-put /tmp/$TEST_FILE $REMOTE_PATH/$TEST_FILE
-ls $REMOTE_PATH/$TEST_FILE
+put /tmp/$TEST_FILE $REMOTE_PATH/images/$TEST_FILE
+ls $REMOTE_PATH/images/$TEST_FILE
+rm $REMOTE_PATH/images/$TEST_FILE
 quit
 EOF
 
-echo "- Uploading test file"
+echo "- Uploading test file to images/"
 echo "- Listing file"
 echo "- Removing test file"
 
 if sftp -b "$SFTP_COMMANDS" "$REMOTE_USER@$REMOTE_HOST"; then
-    echo "SUCCESS: File upload/delete test successful"
+    echo "SUCCESS: File upload/delete test successful in images directory"
 else
     echo "ERROR: File operations failed"
     rm -f "$SFTP_COMMANDS" "/tmp/$TEST_FILE"

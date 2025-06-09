@@ -17,7 +17,7 @@ find_remote_filename() {
     # Create SFTP commands to list remote files
     local sftp_commands=$(mktemp)
     cat > "$sftp_commands" << EOF
-ls $REMOTE_PATH/image-$current_date-*.img.xz
+ls $REMOTE_PATH/images/image-$current_date-*.img.xz
 quit
 EOF
 
@@ -53,7 +53,7 @@ stream_backup() {
     # Create SFTP commands for streaming
     local sftp_commands=$(mktemp)
     cat > "$sftp_commands" << EOF
-put - $REMOTE_PATH/$remote_filename
+put - $REMOTE_PATH/images/$remote_filename
 quit
 EOF
 
@@ -116,7 +116,7 @@ cleanup() {
             echo "Attempting to remove incomplete remote backup file: $BACKUP_FILENAME"
             local sftp_cleanup=$(mktemp)
             cat > "$sftp_cleanup" << EOF
-rm $REMOTE_PATH/$BACKUP_FILENAME
+rm $REMOTE_PATH/images/$BACKUP_FILENAME
 quit
 EOF
             sftp -b "$sftp_cleanup" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null || echo "Warning: Could not remove remote backup file"
@@ -139,7 +139,7 @@ EOF
             backup_summary="Backup completed successfully!
 
 Backup file: $BACKUP_FILENAME
-Remote location: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/$BACKUP_FILENAME
+Remote location: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$BACKUP_FILENAME
 Disk device: $DISK_DEVICE
 Completion time: $completion_time"
 
@@ -223,7 +223,7 @@ echo "Monitor progress: tail -f $LOGFILE"
     echo "Searching for remote backup files older than $RETENTION_DAYS days..."
     local cleanup_commands=$(mktemp)
     cat > "$cleanup_commands" << EOF
-ls $REMOTE_PATH/image-*.img.xz
+ls $REMOTE_PATH/images/image-*.img.xz
 quit
 EOF
 
@@ -241,7 +241,7 @@ EOF
                     echo "Deleting old remote backup: $backup_file"
                     local delete_cmd=$(mktemp)
                     cat > "$delete_cmd" << EOF
-rm $REMOTE_PATH/$backup_file
+rm $REMOTE_PATH/images/$backup_file
 quit
 EOF
                     sftp -b "$delete_cmd" "$REMOTE_USER@$REMOTE_HOST" 2>/dev/null || echo "Warning: Could not delete $backup_file"
@@ -272,7 +272,7 @@ EOF
 
     if stream_backup "$BACKUP_FILENAME"; then
         echo "Streaming backup completed successfully!"
-        echo "Backup saved remotely as: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/$BACKUP_FILENAME"
+        echo "Backup saved remotely as: $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/images/$BACKUP_FILENAME"
     else
         echo "Streaming backup failed"
         exit 1
