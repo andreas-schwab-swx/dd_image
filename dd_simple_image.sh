@@ -94,7 +94,7 @@ BACKUP_FILENAME_XZ="image-$CURRENT_DATE.img.xz"  # Generate backup filename
 
 # zstd
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M | pv | mbuffer -m 1G -q | zstd -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
+dd if="$DISK_DEVICE" bs=32M | pv -f | mbuffer -m 1G -q | zstd -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME" 2>/dev/null | awk '{print $5}')
 echo "zstd: ${size:-0} in ${duration}s"
