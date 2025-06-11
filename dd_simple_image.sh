@@ -94,42 +94,42 @@ BACKUP_FILENAME_XZ="image-$CURRENT_DATE.img.xz"  # Generate backup filename
 
 # zstd
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M | pv -f | mbuffer -m 1G -q | zstd -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
+dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | zstd -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME" 2>/dev/null | awk '{print $5}')
 echo "zstd: ${size:-0} in ${duration}s"
 
 # pigz
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M | pv -f | mbuffer -m 1G -q | pigz -p3 > "$MOUNT_DIR/$BACKUP_FILENAME_PIGZ"
+dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | pigz -p3 > "$MOUNT_DIR/$BACKUP_FILENAME_PIGZ"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_PIGZ" 2>/dev/null | awk '{print $5}')
 echo "pigz: ${size:-0} in ${duration}s"
 
 # bzip2
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M | pv -f | mbuffer -m 1G -q | bzip2 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_BZ2"
+dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | bzip2 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_BZ2"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_BZ2" 2>/dev/null | awk '{print $5}')
 echo "bzip2: ${size:-0} in ${duration}s"
 
 # gzip
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M | pv -f | mbuffer -m 1G -q | gzip -3 > "$MOUNT_DIR/$BACKUP_FILENAME_GZIP"
+dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | gzip -3 > "$MOUNT_DIR/$BACKUP_FILENAME_GZIP"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_GZIP" 2>/dev/null | awk '{print $5}')
 echo "gzip: ${size:-0} in ${duration}s"
 
 # lz4
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M | pv -f | mbuffer -m 1G -q | lz4 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_LZ4"
+dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | lz4 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_LZ4"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_LZ4" 2>/dev/null | awk '{print $5}')
 echo "lz4: ${size:-0} in ${duration}s"
 
 # xz
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M status=progress | pv -f | mbuffer -m 1G -q | xz -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_XZ"
+dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | xz -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_XZ"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_XZ" 2>/dev/null | awk '{print $5}')
 echo "xz: ${size:-0} in ${duration}s"
