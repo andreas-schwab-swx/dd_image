@@ -78,7 +78,7 @@ mkdir -p "$MOUNT_DIR"
 sshfs "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH" "$MOUNT_DIR" -o cache=yes,cache_timeout=1,reconnect,ServerAliveInterval=15
 
 # Set trap for cleanup on exit, interrupt, or termination
-trap 'cleanup' EXIT
+trap 'cleanup' EXIT INT TERM
 
 # Delete backups older than retention days
 find "$MOUNT_DIR" -name "image-*.img.xz" -mtime +$RETENTION_DAYS -delete 2>/dev/null || true
@@ -88,48 +88,48 @@ sync
 
 BACKUP_FILENAME_PIGZ="image-$CURRENT_DATE.img.pigz.gz"  # Generate backup filename
 BACKUP_FILENAME_BZ2="image-$CURRENT_DATE.img.bz2"  # Generate backup filename
-BACKUP_FILENAME_GZ="image-$CURRENT_DATE.img.gzip.gz"  # Generate backup filename
+BACKUP_FILENAME_GZ="image-$CURRENT_DATE.img.gz"  # Generate backup filename
 BACKUP_FILENAME_LZ4="image-$CURRENT_DATE.img.lz4"  # Generate backup filename
 BACKUP_FILENAME_XZ="image-$CURRENT_DATE.img.xz"  # Generate backup filename
 
 # zstd
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | zstd -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
+dd if="$DISK_DEVICE" bs=128M status=progress | mbuffer -m 1G -q | zstd -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME" 2>/dev/null | awk '{print $5}')
 echo "zstd: ${size:-0} in ${duration}s"
 
 # pigz
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | pigz -p3 > "$MOUNT_DIR/$BACKUP_FILENAME_PIGZ"
+dd if="$DISK_DEVICE" bs=128M status=progress | mbuffer -m 1G -q | pigz -p3 > "$MOUNT_DIR/$BACKUP_FILENAME_PIGZ"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_PIGZ" 2>/dev/null | awk '{print $5}')
 echo "pigz: ${size:-0} in ${duration}s"
 
 # bzip2
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | bzip2 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_BZ2"
+dd if="$DISK_DEVICE" bs=128M status=progress | mbuffer -m 1G -q | bzip2 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_BZ2"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_BZ2" 2>/dev/null | awk '{print $5}')
 echo "bzip2: ${size:-0} in ${duration}s"
 
 # gzip
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | gzip -3 > "$MOUNT_DIR/$BACKUP_FILENAME_GZIP"
+dd if="$DISK_DEVICE" bs=128M status=progress | mbuffer -m 1G -q | gzip -3 > "$MOUNT_DIR/$BACKUP_FILENAME_GZ"
 duration=$(($(date +%s) - start_time))
-size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_GZIP" 2>/dev/null | awk '{print $5}')
+size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_GZ" 2>/dev/null | awk '{print $5}')
 echo "gzip: ${size:-0} in ${duration}s"
 
 # lz4
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | lz4 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_LZ4"
+dd if="$DISK_DEVICE" bs=128M status=progress | mbuffer -m 1G -q | lz4 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_LZ4"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_LZ4" 2>/dev/null | awk '{print $5}')
 echo "lz4: ${size:-0} in ${duration}s"
 
 # xz
 start_time=$(date +%s)
-dd if="$DISK_DEVICE" bs=32M conv=sparse status=progress | mbuffer -m 1G -q | xz -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_XZ"
+dd if="$DISK_DEVICE" bs=128M status=progress | mbuffer -m 1G -q | xz -T3 -3 > "$MOUNT_DIR/$BACKUP_FILENAME_XZ"
 duration=$(($(date +%s) - start_time))
 size=$(ls -lh "$MOUNT_DIR/$BACKUP_FILENAME_XZ" 2>/dev/null | awk '{print $5}')
 echo "xz: ${size:-0} in ${duration}s"
