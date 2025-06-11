@@ -1,32 +1,25 @@
 #!/bin/bash
 # DD Image Backup Configuration Example
-# Copy this file to config.sh and adjust the values for your setup
+# Copy this file to config.sh and adjust the values for your setup.
 
-# Remote storage configuration (SFTP)
-REMOTE_USER="your-username"
-REMOTE_HOST="your-storage-host.com"
-REMOTE_PATH="/path/to/your/backup/directory"
+# Local mount directory (where the remote backup is mounted via sshfs)
+MOUNT_DIR="/root/your-storagebox.de/images"  # Example: /root/u123456.your-storagebox.de/images
 
-# Remote backup directory URL (for reference)
-# Example: http://your-username.your-storagebox.de/your-path/images
+# Remote storage configuration (SSHFS)
+REMOTE_USER="your-username"                   # SSH/SFTP username
+REMOTE_HOST="your-storage-host.com"           # Hostname or IP of the storage server
+REMOTE_PATH="/path/to/your/backup/directory"  # Target directory on the remote server
 
 # Backup configuration
-DISK_DEVICE="/dev/vda"  # The entire disk to backup (adjust as needed: /dev/sda, /dev/nvme0n1, etc.)
-RETENTION_DAYS=60       # Number of days to keep backups
-ZERO_FILL=false         # Set to true to clear free space with zeros (improves compression but takes much longer)
-
-# LVM Snapshot configuration
-USE_LVM_SNAPSHOT=false                         # Set to true to use LVM snapshots for consistent backups
-LVM_VG="your-volume-group"                     # Volume Group name (e.g., ubuntu-vg, centos, etc.)
-LVM_LV="your-logical-volume"                   # Logical Volume name (e.g., ubuntu-lv, root, etc.)
-SNAPSHOT_SIZE="5G"                             # Snapshot size (should be enough for changes during backup)
-SNAPSHOT_NAME="root_snap"                      # Name for the snapshot
-FREEZE_FILESYSTEM=true                         # Set to true to freeze filesystem before snapshot
+DISK_DEVICE="/dev/vda"        # Block device to backup (e.g. /dev/sda, /dev/nvme0n1)
+RETENTION_DAYS=60              # Number of days to keep backups
+ZERO_FILL=false                # true: overwrite free space with zeros (improves compression, takes longer)
+SCRIPT_INTERVAL_DAYS=7         # Interval (in days) how often the script typically runs (for zero-fill logic)
 
 # Logging configuration
-LOG_DIR="/var/log/dd_image"
+LOG_DIR="/var/log/dd_image"   # Directory for log files
 
-# Email notification configuration
-EMAIL_NOTIFICATIONS=true             # Set to false to disable email notifications
-EMAIL_FROM="backup@example.com"      # Sender email address
-EMAIL_RECIPIENT="admin@example.com"  # Email address for notifications
+# Email notification
+EMAIL_NOTIFICATIONS=true             # true: enable email notifications
+EMAIL_RECIPIENT="backup@example.com"  # Recipient address for notifications
+EMAIL_FROM="admin@example.com"         # Sender address for notifications

@@ -83,6 +83,18 @@ trap 'cleanup' EXIT INT TERM
 # Delete backups older than retention days
 find "$MOUNT_DIR" -name "image-*.img.xz" -mtime +$RETENTION_DAYS -delete 2>/dev/null || true
 
+# Zero free space with dd if within first SCRIPT_INTERVAL_DAYS of the month
+if [ "${ZERO_FILL}" = "true" ]; then
+    day_of_month=$(date +%d | sed 's/^0*//')
+    if [ "$day_of_month" -le "$SCRIPT_INTERVAL_DAYS" ]; then
+        echo "Zeroing free space (monthly, within first $SCRIPT_INTERVAL_DAYS days)..."
+        FILLFILE="/zero.fill"
+        dd if=/dev/zero of="$FILLFILE" bs=1M status=progress || true
+        rm -f "$FILLFILE"
+        echo "Zeroing complete."
+    fi
+fi
+
 # Sync filesystem to ensure data consistency
 sync
 
