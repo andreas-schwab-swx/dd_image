@@ -7,32 +7,35 @@ assignees: ''
 
 ---
 
-**Describe the bug**
+**Describe the bug**  
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+**To Reproduce**  
 Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+1. Run `./dd_image.sh ...`
+2. …
+3. …
 
-**Expected behavior**
+**Expected behavior**  
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Logs / Error output**  
+If applicable, paste relevant log excerpts or error messages here (please redact secrets).
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+**Environment (please complete the following information):**
+- OS / Distro: [e.g. Ubuntu 24.04, Debian 12]
+- Kernel: [e.g. `uname -r`]
+- Script version / commit: [e.g. `git rev-parse --short HEAD`]
+- Shell: [e.g. bash 5.2]
+- Tools:
+  - zstd: (`zstd --version`)
+  - mbuffer: (`mbuffer -V`)
+  - sshfs/fuse: (`sshfs -V`, `fusermount --version`)
+- Backup source: [e.g. `/dev/sda`, LVM LV, ZFS zvol]
+- Backup target: [local path, SSHFS mount, remote storage box]
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+**Screenshots / Diagrams (optional)**  
+If applicable, add screenshots of error messages or diagrams showing your setup.
 
-**Additional context**
-Add any other context about the problem here.
+**Additional context**  
+Add any other context about the problem here (network conditions, storage capacity, cron/systemd usage, etc.).
