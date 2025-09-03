@@ -2,7 +2,7 @@
 name: Support question template
 about: Ask a question about using dd_image.
 title: ''
-labels: ''
+labels: 'question'
 assignees: ''
 
 ---
