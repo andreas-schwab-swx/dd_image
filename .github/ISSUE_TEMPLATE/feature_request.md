@@ -1,10 +1,9 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
-assignees: ''
-
+name: Feature Request
+about: Suggest an enhancement for dd_image
+title: "[FEATURE] "
+labels: enhancement
+assignees: ""
 ---
 
 **Is your feature request related to a problem? Please describe.**  

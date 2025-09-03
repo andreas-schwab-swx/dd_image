@@ -1,10 +1,9 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
-
+name: Bug Report
+about: Create a report to help improve dd_image
+title: "[BUG] "
+labels: bug
+assignees: ""
 ---
 
 **Describe the bug**  
